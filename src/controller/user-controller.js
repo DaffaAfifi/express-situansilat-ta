@@ -13,24 +13,6 @@ const test = async (req, res, next) => {
   }
 };
 
-const register = async (req, res, next) => {
-  try {
-    const result = await userService.register(req.body);
-    response(200, result, "Register success", res);
-  } catch (error) {
-    next(error);
-  }
-};
-
-const login = async (req, res, next) => {
-  try {
-    const result = await userService.login(req.body);
-    response(200, result, "Login success", res);
-  } catch (error) {
-    next(error);
-  }
-};
-
 const testToken = (req, res, next) => {
   try {
     const token = req.get("Authorization");
@@ -48,6 +30,15 @@ const getUsers = async (req, res, next) => {
   try {
     const result = await userService.getUsers();
     response(200, result, "Get users success", res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createUser = async (req, res, next) => {
+  try {
+    const result = await userService.createUser(req.body);
+    response(200, result, "Register success", res);
   } catch (error) {
     next(error);
   }
@@ -89,11 +80,10 @@ const updateUser = async (req, res, next) => {
   }
 };
 
-const logout = async (req, res, next) => {
+const getSavedNewsComment = async (req, res, next) => {
   try {
-    const token = req.get("Authorization");
-    const result = await userService.logout(token);
-    response(200, result, "Logout success", res);
+    const result = await userService.getSavedNewsComment(req.params.id);
+    response(200, result, "Get saved news comment success", res);
   } catch (error) {
     next(error);
   }
@@ -101,13 +91,12 @@ const logout = async (req, res, next) => {
 
 export default {
   test,
-  register,
-  login,
   getUsers,
+  createUser,
   getUserById,
   getSavedNews,
   getFacilities,
   updateUser,
-  logout,
+  getSavedNewsComment,
   testToken,
 };

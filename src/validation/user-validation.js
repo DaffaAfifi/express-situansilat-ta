@@ -1,6 +1,6 @@
 import Joi from "joi";
 
-const registerUserValidation = Joi.object({
+const createUserValidation = Joi.object({
   nama: Joi.string().max(100).required().messages({
     "string.base": "Nama harus berupa teks",
     "string.max": "Nama tidak boleh lebih dari 100 karakter",
@@ -102,4 +102,4 @@ const updateUserValidation = Joi.object({
   }),
 });
 
-export { registerUserValidation, loginUserValidation, updateUserValidation };
+export { createUserValidation, loginUserValidation, updateUserValidation };
