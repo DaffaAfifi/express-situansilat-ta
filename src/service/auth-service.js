@@ -14,7 +14,10 @@ const login = async (req) => {
 
     const [rows] = await db
       .promise()
-      .query("SELECT * FROM users WHERE email = ?", [loginRequest.email]);
+      .query(
+        "SELECT id, email, nama, role_id, password FROM users WHERE email = ?",
+        [loginRequest.email]
+      );
 
     if (rows.length === 0) {
       throw new ResponseError(400, "Username or password wrong");

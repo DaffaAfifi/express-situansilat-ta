@@ -1,7 +1,6 @@
 import db from "../application/database.js";
 import { ResponseError } from "../response/response-error.js";
 import jwt from "jsonwebtoken";
-import { logger } from "../application/logging.js";
 
 export const authMiddleware = async (req, res, next) => {
   const token = req.get("Authorization");
@@ -11,6 +10,9 @@ export const authMiddleware = async (req, res, next) => {
   }
 
   try {
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decodedToken;
+
     const [rows] = await db
       .promise()
       .query("SELECT * FROM sessions WHERE token = ?", [token]);
@@ -19,15 +21,8 @@ export const authMiddleware = async (req, res, next) => {
       return next(new ResponseError(401, "Unauthorized"));
     }
 
-    const decodedToken = jwt.decode(token);
-    if (decodedToken.exp * 1000 < Date.now()) {
-      await db.promise().query("DELETE FROM sessions WHERE token = ?", [token]);
-      return next(new ResponseError(401, "Unauthorized"));
-    }
-
-    req.user = rows[0];
     next();
   } catch (error) {
-    next(new ResponseError(500, error.message));
+    return next(new ResponseError(401, "Unauthorized"));
   }
 };

@@ -9,7 +9,11 @@ const getAssistanceById = async (id) => {
   try {
     const [rows] = await db.promise().query(
       `SELECT 
-      assistance.id, assistance.nama, assistance.koordinator, assistance.sumber_anggaran, assistance.total_anggaran, assistance.tahun_pemberian, assistance_tools.kuantitas, tools.nama_item, tools.harga, tools.deskripsi
+          assistance.id, assistance.nama, assistance.koordinator, 
+          assistance.sumber_anggaran, assistance.total_anggaran, 
+          assistance.tahun_pemberian, 
+          assistance_tools.kuantitas, 
+          tools.nama_item, tools.harga, tools.deskripsi
         FROM assistance
         LEFT JOIN assistance_tools ON assistance.id = assistance_tools.assistance_id
         LEFT JOIN tools ON assistance_tools.tools_id = tools.id
@@ -28,13 +32,19 @@ const getAssistanceById = async (id) => {
       sumber_anggaran: rows[0].sumber_anggaran,
       total_anggaran: rows[0].total_anggaran,
       tahun_pemberian: rows[0].tahun_pemberian,
-      tools: rows.map((row) => ({
-        nama_item: row.nama_item,
-        kuantitas: row.kuantitas,
-        harga: row.harga,
-        deskripsi: row.deskripsi,
-      })),
+      tools: [],
     };
+
+    rows.forEach((row) => {
+      if (row.nama_item) {
+        result.tools.push({
+          nama_item: row.nama_item,
+          kuantitas: row.kuantitas,
+          harga: row.harga,
+          deskripsi: row.deskripsi,
+        });
+      }
+    });
 
     return result;
   } catch (error) {
@@ -46,7 +56,6 @@ const getAssistanceById = async (id) => {
 const createAssistanceTools = async (req, res) => {
   try {
     const data = validate(createAssistanceToolsValidation, req);
-    console.log(data);
     const result = await db
       .promise()
       .query("INSERT INTO assistance_tools SET ?", [data]);

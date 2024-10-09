@@ -63,41 +63,41 @@ const loginUserValidation = Joi.object({
 });
 
 const updateUserValidation = Joi.object({
-  nama: Joi.string().max(100).messages({
+  nama: Joi.string().max(100).optional().messages({
     "string.base": "Nama harus berupa teks",
     "string.max": "Nama tidak boleh lebih dari 100 karakter",
   }),
-  email: Joi.string().email({ minDomainSegments: 2 }).messages({
+  email: Joi.string().email({ minDomainSegments: 2 }).optional().messages({
     "string.email": "Email tidak valid",
   }),
-  password: Joi.string().min(6).messages({
+  password: Joi.string().min(6).optional().messages({
     "string.min": "Password minimal harus memiliki 6 karakter",
   }),
-  NIK: Joi.string().length(16).regex(/^\d+$/).messages({
+  NIK: Joi.string().length(16).regex(/^\d+$/).optional().messages({
     "string.length": "NIK harus terdiri dari 16 karakter",
     "string.pattern.base": "NIK hanya boleh terdiri dari angka",
   }),
-  alamat: Joi.string().max(100).messages({
+  alamat: Joi.string().max(100).optional().messages({
     "string.max": "Alamat tidak boleh lebih dari 100 karakter",
   }),
-  telepon: Joi.string().max(15).regex(/^\d+$/).messages({
+  telepon: Joi.string().max(15).regex(/^\d+$/).optional().messages({
     "string.max": "Nomor telepon tidak boleh lebih dari 15 karakter",
     "string.pattern.base": "Nomor telepon hanya boleh terdiri dari angka",
   }),
-  jenis_kelamin: Joi.string().valid("L", "P").messages({
+  jenis_kelamin: Joi.string().valid("L", "P").optional().messages({
     "any.only": "Jenis kelamin harus 'L' (Laki-laki) atau 'P' (Perempuan)",
   }),
-  kepala_keluarga: Joi.number().integer().valid(0, 1).messages({
+  kepala_keluarga: Joi.number().integer().valid(0, 1).optional().messages({
     "any.only": "Kepala keluarga harus bernilai 0 atau 1",
     "number.base": "Kepala keluarga harus berupa angka",
   }),
-  tempat_lahir: Joi.string().max(50).messages({
+  tempat_lahir: Joi.string().max(50).optional().messages({
     "string.max": "Tempat lahir tidak boleh lebih dari 50 karakter",
   }),
-  tanggal_lahir: Joi.date().iso().messages({
+  tanggal_lahir: Joi.date().iso().optional().messages({
     "date.format": "Tanggal lahir harus dalam format yang valid (YYYY-MM-DD)",
   }),
-  jenis_usaha: Joi.string().max(50).messages({
+  jenis_usaha: Joi.string().max(50).optional().messages({
     "string.max": "Jenis usaha tidak boleh lebih dari 50 karakter",
   }),
 });

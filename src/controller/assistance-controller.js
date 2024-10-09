@@ -14,7 +14,7 @@ const getAssistanceById = async (req, res, next) => {
 const createAssistanceTools = async (req, res, next) => {
   try {
     const result = await assistanceService.createAssistanceTools(req.body);
-    response(200, result, "Create assistance tools success", res);
+    response(201, result, "Create assistance tools success", res);
   } catch (error) {
     next(error);
   }

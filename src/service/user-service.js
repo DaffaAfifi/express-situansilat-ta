@@ -18,15 +18,7 @@ const getUsers = async () => {
         "SELECT nama, email, NIK, alamat, telepon, jenis_kelamin, kepala_keluarga, tempat_lahir, tanggal_lahir, jenis_usaha FROM users"
       );
 
-    const modifiedRows = rows.map((row) => ({
-      ...row,
-      jenis_kelamin: row.jenis_kelamin === "L" ? "Laki-Laki" : "Perempuan",
-      kepala_keluarga:
-        row.kepala_keluarga === 1 ? "Kepala Keluarga" : "Bukan Kepala Keluarga",
-      tanggal_lahir: new Date(row.tanggal_lahir).toLocaleDateString("en-GB"),
-    }));
-
-    return modifiedRows;
+    return rows;
   } catch (error) {
     throw new ResponseError(400, error.message);
   }
@@ -37,39 +29,32 @@ const createUser = async (req, res) => {
   try {
     const user = validate(createUserValidation, req);
 
-    const [countUser] = await db
-      .promise()
-      .query("SELECT COUNT(*) AS count FROM users WHERE email = ? OR NIK = ?", [
-        user.email,
-        user.NIK,
-      ]);
-
-    if (countUser[0].count > 0) {
-      throw new ResponseError(400, "Email or NIK already exists");
-    }
-
     user.password = await bcrypt.hash(user.password, 10);
 
-    const [result] = await db
-      .promise()
-      .query(
-        "INSERT INTO users (nama, email, password, NIK, alamat, telepon, jenis_kelamin, kepala_keluarga, tempat_lahir, tanggal_lahir, jenis_usaha, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [
-          user.nama,
-          user.email,
-          user.password,
-          user.NIK,
-          user.alamat,
-          user.telepon,
-          user.jenis_kelamin,
-          user.kepala_keluarga,
-          user.tempat_lahir,
-          user.tanggal_lahir,
-          user.jenis_usaha,
-          new Date(),
-          new Date(),
-        ]
-      );
+    const [result] = await db.promise().query(
+      `INSERT INTO users (nama, email, password, NIK, alamat, telepon, jenis_kelamin, kepala_keluarga, tempat_lahir, tanggal_lahir, jenis_usaha, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE email = email`,
+      [
+        user.nama,
+        user.email,
+        user.password,
+        user.NIK,
+        user.alamat,
+        user.telepon,
+        user.jenis_kelamin,
+        user.kepala_keluarga,
+        user.tempat_lahir,
+        user.tanggal_lahir,
+        user.jenis_usaha,
+        new Date(),
+        new Date(),
+      ]
+    );
+
+    if (result.affectedRows === 0) {
+      throw new ResponseError(400, "Email or NIK already exists");
+    }
 
     return result;
   } catch (error) {
@@ -87,15 +72,11 @@ const getUserById = async (id) => {
         [id]
       );
 
-    const modifiedRows = rows.map((row) => ({
-      ...row,
-      jenis_kelamin: row.jenis_kelamin === "L" ? "Laki-Laki" : "Perempuan",
-      kepala_keluarga:
-        row.kepala_keluarga === 1 ? "Kepala Keluarga" : "Bukan Kepala Keluarga",
-      tanggal_lahir: new Date(row.tanggal_lahir).toLocaleDateString("en-GB"),
-    }));
+    if (rows.length === 0) {
+      throw new ResponseError(404, "User not found");
+    }
 
-    return modifiedRows[0];
+    return rows[0];
   } catch (error) {
     throw new ResponseError(400, error.message);
   }
@@ -106,9 +87,7 @@ const getSavedNews = async (id) => {
   try {
     const [rows] = await db.promise().query(
       `SELECT 
-          users.id, users.nama, users.email, users.NIK, users.alamat, users.telepon, 
-          users.jenis_kelamin, users.kepala_keluarga, users.tempat_lahir, users.tanggal_lahir, 
-          users.jenis_usaha, news.id AS news_id, news.gambar, news.judul, news.subjudul, news.isi, news.created_at 
+          users.id, users.nama, users.email, news.id AS news_id, news.gambar, news.judul, news.subjudul, news.isi, news.created_at 
         FROM users 
         INNER JOIN saved_news ON users.id = saved_news.user_id 
         INNER JOIN news ON saved_news.news_id = news.id 
@@ -120,23 +99,10 @@ const getSavedNews = async (id) => {
       throw new ResponseError(404, "User or saved news not found");
     }
 
-    const user = rows[0];
-
     const payload = {
-      id: user.id,
-      nama: user.nama,
-      email: user.email,
-      NIK: user.NIK,
-      alamat: user.alamat,
-      telepon: user.telepon,
-      jenis_kelamin: user.jenis_kelamin === "L" ? "Male" : "Female",
-      kepala_keluarga:
-        user.kepala_keluarga === 1
-          ? "Kepala Keluarga"
-          : "Bukan Kepala Keluarga",
-      tempat_lahir: user.tempat_lahir,
-      tanggal_lahir: new Date(user.tanggal_lahir).toLocaleDateString("en-GB"),
-      jenis_usaha: user.jenis_usaha,
+      id: rows[0].id,
+      nama: rows[0].nama,
+      email: rows[0].email,
       berita_tersimpan: rows.map((row) => ({
         id: row.news_id,
         gambar: row.gambar,
@@ -158,10 +124,11 @@ const getFacilities = async (id) => {
   try {
     const [rows] = await db.promise().query(
       `SELECT
-          users.id, users.email, users.NIK, users.alamat, users.telepon, users.jenis_kelamin, users.kepala_keluarga, users.tempat_lahir, users.tanggal_lahir, users.jenis_usaha,
+          users.id, users.email, 
           sertificates.id AS id_sertifikat, sertificates.nama AS nama_sertifikat, user_sertificates.no_sertifikat, sertificates.tanggal_terbit, sertificates.kadaluarsa, sertificates.keterangan,
           trainings.id AS id_pelatihan, trainings.nama AS nama_pelatihan, trainings.penyelenggara, trainings.tanggal_pelaksanaan, trainings.tempat,
           assistance.id AS id_bantuan, assistance.nama AS nama_bantuan, assistance.koordinator, assistance.sumber_anggaran, assistance.total_anggaran, assistance.tahun_pemberian,
+          assistance_tools.kuantitas,
           tools.id AS id_alat, tools.nama_item, tools.harga, tools.deskripsi
         FROM users
         LEFT JOIN user_sertificates ON users.id = user_sertificates.user_id
@@ -183,14 +150,6 @@ const getFacilities = async (id) => {
       id: rows[0].id,
       nama: rows[0].nama,
       email: rows[0].email,
-      NIK: rows[0].NIK,
-      alamat: rows[0].alamat,
-      telepon: rows[0].telepon,
-      jenis_kelamin: rows[0].jenis_kelamin,
-      kepala_keluarga: rows[0].kepala_keluarga,
-      tempat_lahir: rows[0].tempat_lahir,
-      tanggal_lahir: rows[0].tanggal_lahir,
-      jenis_usaha: rows[0].jenis_usaha,
       sertifikat: [],
       pelatihan: [],
       bantuan: [],
@@ -246,6 +205,7 @@ const getFacilities = async (id) => {
             id: row.id_alat,
             nama: row.nama_item,
             harga: row.harga,
+            kuantitas: row.kuantitas,
           });
         }
       }
@@ -261,12 +221,30 @@ const getFacilities = async (id) => {
 
 // Update user
 const updateUser = async (id, data) => {
-  const user = validate(updateUserValidation, data);
+  const userUpdates = validate(updateUserValidation, data);
+
+  const updates = [];
+  const values = [];
+
+  Object.keys(userUpdates).forEach((key) => {
+    updates.push(`${key} = ?`);
+    values.push(userUpdates[key]);
+  });
+
+  if (updates.length === 0) {
+    throw new ResponseError(400, "No valid fields to update");
+  }
+
+  const query = `UPDATE users SET ${updates.join(", ")} WHERE id = ?`;
+  values.push(id);
 
   try {
-    const result = await db
-      .promise()
-      .query("UPDATE users SET ? WHERE id = ?", [user, id]);
+    const result = await db.promise().query(query, values);
+
+    if (result.affectedRows === 0) {
+      throw new ResponseError(404, "User not found");
+    }
+
     return result;
   } catch (error) {
     throw new ResponseError(400, error.message);
@@ -278,9 +256,7 @@ const getSavedNewsComment = async (id) => {
   try {
     const [rows] = await db.promise().query(
       `SELECT 
-          users.id, users.nama, users.email, users.NIK, users.alamat, users.telepon, 
-          users.jenis_kelamin, users.kepala_keluarga, users.tempat_lahir, users.tanggal_lahir, 
-          users.jenis_usaha, news.id AS news_id, news.gambar, news.judul, news.subjudul, news.isi, news.created_at, comments.news_id AS comment_id, comments.comment, comments.created_at
+          users.id, users.nama, users.email, news.id AS news_id, news.gambar, news.judul, news.subjudul, news.isi, news.created_at, comments.news_id AS comment_id, comments.comment, comments.created_at
         FROM users
         LEFT JOIN saved_news ON users.id = saved_news.user_id
         LEFT JOIN news ON saved_news.news_id = news.id
@@ -298,22 +274,14 @@ const getSavedNewsComment = async (id) => {
       id: rows[0].id,
       nama: rows[0].nama,
       email: rows[0].email,
-      NIK: rows[0].NIK,
-      alamat: rows[0].alamat,
-      telepon: rows[0].telepon,
-      jenis_kelamin: rows[0].jenis_kelamin,
-      kepala_keluarga: rows[0].kepala_keluarga,
-      tempat_lahir: rows[0].tempat_lahir,
-      tanggal_lahir: rows[0].tanggal_lahir,
-      jenis_usaha: rows[0].jenis_usaha,
       news: [],
     };
 
-    const helpMap = {};
+    const newsMap = {};
 
     rows.forEach((row) => {
-      if (!helpMap[row.news_id]) {
-        helpMap[row.news_id] = {
+      if (!newsMap[row.news_id]) {
+        newsMap[row.news_id] = {
           id: row.news_id,
           gambar: row.gambar,
           judul: row.judul,
@@ -323,18 +291,15 @@ const getSavedNewsComment = async (id) => {
           comment: [],
         };
       }
-      if (
-        row.comment_id &&
-        !helpMap[row.news_id].comment.some((c) => c.id === row.comment_id)
-      ) {
-        helpMap[row.news_id].comment.push({
+      if (row.comment_id) {
+        newsMap[row.news_id].comment.push({
           comment: row.comment,
           created_at: row.created_at,
         });
       }
     });
 
-    result.news = Object.values(helpMap);
+    result.news = Object.values(newsMap);
 
     return result;
   } catch (error) {

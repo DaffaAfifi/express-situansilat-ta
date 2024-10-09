@@ -38,7 +38,7 @@ const getUsers = async (req, res, next) => {
 const createUser = async (req, res, next) => {
   try {
     const result = await userService.createUser(req.body);
-    response(200, result, "Register success", res);
+    response(201, result, "Create user success", res);
   } catch (error) {
     next(error);
   }
